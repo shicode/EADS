@@ -83,4 +83,9 @@ public class Container {
     public String getColour(){
         return colour;
     }
+    
+    public Location getLocation(){
+        return location;
+    }
 }
+

@@ -10,7 +10,7 @@ public class Location {
         this.stack = stack;
         this.tier = tier;
     }
-
+    
     public int getCluster() {
         return cluster;
     }
