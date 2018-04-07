@@ -105,5 +105,9 @@ public class Container {
     public Location getLocation(){
         return location;
     }
+    
+    public int getContainerId(){
+        return containerID;
+    }
 }
 

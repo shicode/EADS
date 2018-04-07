@@ -26,9 +26,9 @@ public class ContainerClustering {
     private static ArrayList<Location> locationList = new ArrayList<>();
     private static HashMap<Integer, HashMap<String, Double>> clstByDiffIndx = new HashMap<>();
     private static HashMap<String, Integer> maxTierRef = new HashMap<>();
-    private static int[][] topTierLookupArray = new int[11][201];
-    private static int[] cranesActualByCluster = new int[11];
-    private static int[] trucksActualByCluster = new int[11];
+    private static int[][] topTierLookupArray ;
+    private static int[] cranesActualByCluster;
+    private static int[] trucksActualByCluster;
     
     public static void main(String[] args){
         
@@ -48,7 +48,18 @@ public class ContainerClustering {
         HashMap<String, int[]> clusterAllocations = allocateClst(prefClstByColor);
         
         // Allocate resources to cluster
-        resourceAllocation(clusterAllocations);
+        Cluster.topTierContainers(resourceAllocation(clusterAllocations),topTierLookupArray);
+        
+        //Hardcoded colours (To remove)
+        int[] redArr = {1, 600, 0};
+        int[] blueArr = {3, 650, 0};
+        
+        clusterAllocations.put("red", redArr);
+        clusterAllocations.put("blue", blueArr);
+        
+                                        //System.out.println( "Cluster Alloations: " + clusterAllocations.size());
+        
+        Cluster.checkGridAvailability(resourceAllocation(clusterAllocations), clusterAllocations,topTierLookupArray);
     }
     public static HashMap<Integer, HashMap<String, ArrayList<Container>>> readDataset() {
         // Input Data Source
@@ -128,6 +139,9 @@ public class ContainerClustering {
                 }
                 
             }
+            topTierLookupArray = new int[Location.getTotalCluster()][Location.getTotalStack()];
+            cranesActualByCluster = new int[Location.getTotalCluster()];
+            trucksActualByCluster = new int[Location.getTotalCluster()];
             
         } catch (FileNotFoundException e) {
             e.printStackTrace();
@@ -312,7 +326,7 @@ public class ContainerClustering {
             Container.incrementYellowCount();
         }
     }
-    public static void resourceAllocation(HashMap<String, int[]> clusterAllocations) {
+    public static HashMap<Integer, ContainerAllocation[][]> resourceAllocation(HashMap<String, int[]> clusterAllocations) {
         /*
         //Iterate through the String array and we get the colours for each cluster and the number of containers.
         //Cluster --> colour --> number
@@ -341,6 +355,8 @@ public class ContainerClustering {
 
         
         //System.out.println(clusterAllocations);
+        
+        
 
         int numClusters = ctnMapByCluster.size();
         HashMap<Integer, ContainerAllocation[][]> allocationGrids = new HashMap<>();
@@ -462,6 +478,7 @@ public class ContainerClustering {
             }
         }
         actualCranesNeeded = Arrays.stream(cranesActualByCluster).sum();
+        return allocationGrids;
     }
     private static HashMap sortByValues(HashMap map) { 
        List list = new LinkedList(map.entrySet());
