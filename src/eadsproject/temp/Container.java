@@ -25,6 +25,14 @@ public class Container {
         this.containerID = containerID;
         this.colour = colour;
         location = new Location(cluster, stackingPosition, tier);
+//        switch(colour){
+//            case "blue": blueCount++;
+//            case "green": greenCount++;
+//            case "indigo": indigoCount++;
+//            case "orange": orangeCount++;
+//            case "red": redCount++;
+//            default: yellowCount++;
+//        }
     }
     
     public Container(int containerID, Location location){
