@@ -75,7 +75,8 @@ public class ContainerClustering {
         
         resourceAllocation();
 
-        HashMap<Integer, HashMap<String, Double>> test = assignDiffIndxtoClst(ctnMapByCluster);
+       // HashMap<Integer, HashMap<String, Double>> clstDiffIndx = assignDiffIndxtoClst(ctnMapByCluster);
+        
         Iterator it = test.entrySet().iterator();
         while (it.hasNext()) {
             Map.Entry color= (Map.Entry)it.next();
