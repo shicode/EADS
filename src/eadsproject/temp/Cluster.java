@@ -29,14 +29,16 @@ public class Cluster {
         //Iterate through all clusters
         for(int i=0;i<=10;i++){
             ContainerAllocation[][] currentClusterGrid = grids.get(i);
-            Container c = currentClusterGrid.getContainer();
-            int currentContainerCluster = c.getLocation().getCluster();
-            int currentContainerStack = c.getLocation().getStack();
-            int currentContainerTier = c.getLocation().getTier();
-            int lookupMaxTier = maxTierRef[currentContainerCluster][currentContainerStack];
-            //Add containers into list if current container is at the "highest tier" (based on maxTierRef)
-            if(currentContainerTier==lookupMaxTier){
-                topTierContainers.add(c);
+            for(int j=0;j<=200;j++){
+                for(int k=0;k<5;k++){
+                    ContainerAllocation ca = currentClusterGrid[j][k];
+                    Container c = ca.getContainer();
+                    int currentContainerTier = c.getLocation().getTier();
+                    int maxTier = maxTierRef[i][j];
+                    if(maxTier==currentContainerTier){
+                        topTierContainers.add(c);
+                    }
+                }
             }
         }
         return topTierContainers;
@@ -55,14 +57,15 @@ public class Cluster {
             for(int j=0;j<=200;j++){
                 //Add cell to available grid list if there are no containers
                 if(currentClusterGrid[j].length==0){
-                    availableGridList.add(new Location(i, j));
+                    availableGridList.add(new Location(i, j, 0));
                 //Do not consider stack positions currently with 5 containers    
                 }else if(currentClusterGrid[j].length<5){
                     //Iterate through all containers in specific stacking position
                     for(int k=0;k<currentClusterGrid[j].length;k++){
                         if(allContainerSameColour){
                             allContainerSameColour = true;
-                            Container c = currentClusterGrid[j].getContainer();
+                            ContainerAllocation ca = currentClusterGrid[j][k];
+                            Container c = ca.getContainer();
                             if(c!=null){
                                 int currentContainerCluster = c.getLocation().getCluster();
                                 currentColour = c.getColour();
@@ -81,7 +84,7 @@ public class Cluster {
                             }
                         }
                     } if(allContainerSameColour){
-                        availableGridList.add(new Location(i, j));
+                        availableGridList.add(new Location(i, j, currentClusterGrid[j].length));
                     }
                 }
             }
