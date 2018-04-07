@@ -56,6 +56,16 @@ public class Container {
         yellowCount++;
     }
     
+    public static int getContainerCnt(String color){
+        switch(color){
+            case "blue": return blueCount;
+            case "green": return greenCount;
+            case "indigo": return indigoCount;
+            case "orange": return orangeCount;
+            case "red": return redCount;
+            default: return yellowCount;
+        }
+    }
     public static int getBlueCount(){
         return blueCount;
     }
