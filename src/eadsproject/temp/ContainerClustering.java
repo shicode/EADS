@@ -47,19 +47,12 @@ public class ContainerClustering {
         // Finalized cluster allocation to respective color
         HashMap<String, int[]> clusterAllocations = allocateClst(prefClstByColor);
         
+        HashMap<Integer, ContainerAllocation[][]> allocationGrid = resourceAllocation(clusterAllocations);
         // Allocate resources to cluster
-        Cluster.topTierContainers(resourceAllocation(clusterAllocations),topTierLookupArray);
-        
-        //Hardcoded colours (To remove)
-        int[] redArr = {1, 600, 0};
-        int[] blueArr = {3, 650, 0};
-        
-        clusterAllocations.put("red", redArr);
-        clusterAllocations.put("blue", blueArr);
-        
-                                        //System.out.println( "Cluster Alloations: " + clusterAllocations.size());
-        
-        Cluster.checkGridAvailability(resourceAllocation(clusterAllocations), clusterAllocations,topTierLookupArray);
+        for(int i = 0; i < Location.getTotalCluster(); i++){
+            //Cluster.topTierContainers(i,allocationGrid,topTierLookupArray);
+            Cluster.checkGridAvailability(i,allocationGrid, clusterAllocations,topTierLookupArray);
+        }
     }
     public static HashMap<Integer, HashMap<String, ArrayList<Container>>> readDataset() {
         // Input Data Source
@@ -85,7 +78,7 @@ public class ContainerClustering {
 
                 Container ctn = new Container(containerID, colour, cluster, stack, tier);
                 Location location = new Location(cluster, stack, tier);
-
+                
             
                 //Add to max tier ref HashMap for dynamic scaling
                 String key = cluster + "-" + stack;
@@ -139,6 +132,12 @@ public class ContainerClustering {
                 }
                 
             }
+            
+            ArrayList<Cluster> clusterList = new ArrayList<>();
+            for (int i = 0; i< Location.getTotalCluster(); i++ ){
+                clusterList.add(new Cluster(i,new ArrayList<Activity>(), new ArrayList<Resource>(), new ArrayList<Container>()));
+            }   
+            
             topTierLookupArray = new int[Location.getTotalCluster()][Location.getTotalStack()];
             cranesActualByCluster = new int[Location.getTotalCluster()];
             trucksActualByCluster = new int[Location.getTotalCluster()];
@@ -355,13 +354,10 @@ public class ContainerClustering {
 
         
         //System.out.println(clusterAllocations);
-        
-        
-
         int numClusters = ctnMapByCluster.size();
         HashMap<Integer, ContainerAllocation[][]> allocationGrids = new HashMap<>();
         for (int i = 0; i < numClusters; i++) {
-            ContainerAllocation[][] grid = new ContainerAllocation[201][5];
+            ContainerAllocation[][] grid = new ContainerAllocation[Location.getTotalStack()][Location.getTotalTier()];
             allocationGrids.put(i, grid);
         }
 

@@ -12,11 +12,13 @@ import java.util.*;
  */
 public class Cluster {
     
-    private ArrayList<Activity> waitingList = new ArrayList<>();
-    private ArrayList<Resource> resourceList = new ArrayList<>();
-    private ArrayList<Container> containerList = new ArrayList<>();
+    private static int clusterID;
+    private static ArrayList<Activity> waitingList = new ArrayList<>();
+    private static ArrayList<Resource> resourceList = new ArrayList<>();
+    private static ArrayList<Container> containerList = new ArrayList<>();
     
-    public Cluster(ArrayList<Activity> waitingList, ArrayList<Resource> resourceList, ArrayList<Container> containerList){
+    public Cluster(int clusterID, ArrayList<Activity> waitingList, ArrayList<Resource> resourceList, ArrayList<Container> containerList){
+        this.clusterID = clusterID;
         this.waitingList = waitingList;
         this.resourceList = resourceList;
         this.containerList = containerList;
@@ -24,129 +26,131 @@ public class Cluster {
     
     //Input parameters: HashMap of cluster number (key) and 2D Array of ContainerAllocation (value),
     //                  2D array (cluster*stack) of integers which stores the value of the highest tiered containers
-    public static ArrayList<Container> topTierContainers(HashMap<Integer, ContainerAllocation[][]> grids, int[][] maxTierRef){
+    public static HashMap<Integer, ArrayList<Container>> topTierContainers(int clstID,HashMap<Integer, ContainerAllocation[][]> grids, int[][] maxTierRef){
+        HashMap<Integer, ArrayList<Container>> returnMap = new HashMap<>();
         ArrayList<Container> topTierContainers = new ArrayList<>();
         //Iterate through all clusters
-        for(int i=0;i<=10;i++){
-            ContainerAllocation[][] currentClusterGrid = grids.get(i);
-            for(int j=0;j<=200;j++){
+        
+           ContainerAllocation[][] currentClusterGrid = grids.get(clstID);
+           // System.out.println(currentClusterGrid[1][3].getContainer());
+            // looping all the columns stacks (0-200)
+            for(int j=0;j<Location.getTotalStack();j++){
+                // looping all the tier that is filled up 
                 for(int k=0;k<currentClusterGrid[j].length;k++){
                     ContainerAllocation ca = currentClusterGrid[j][k];
-                    if(ca!=null){
-                        Container c = ca.getContainer();
-                        int currentContainerTier = c.getLocation().getTier();
-                        int maxTier = maxTierRef[i][j];
-                        if(maxTier==currentContainerTier){
-                            topTierContainers.add(c);
-                                                   System.out.println(c.getContainerId());
-                        }  
+                    if(ca!=null && ca.getContainer() != null){
+                        if(returnMap.size() == 0){
+                            ArrayList<Container> newList = new ArrayList<>();
+                            newList.add(ca.getContainer());
+                            returnMap.put(k, newList);
+                        }else{
+                            if(returnMap.containsKey(k)){
+                                ArrayList<Container> tempList = returnMap.get(k);
+                                tempList.add(ca.getContainer());
+                                returnMap.put(k, tempList);
+                            }else{
+                                ArrayList<Container> newList = new ArrayList<>();
+                                newList.add(ca.getContainer());
+                                returnMap.put(k, newList);
+                            }
+                        }
                     }
                 }
             }
-        }
-        return topTierContainers;
+//        System.out.println("Cluster " + clstID);
+//        Iterator it = returnMap.entrySet().iterator();
+//        while(it.hasNext()){
+//            Map.Entry pair = (Map.Entry) it.next();
+//            ArrayList<Container> list = (ArrayList<Container>)pair.getValue();
+//            int Tier = (Integer)pair.getKey() + 1;
+//           
+//            System.out.println("Tier - " + Tier + " - " + list.size());
+//        }
+        return returnMap;
     }
     
     //Input parameters: HashMap of cluster number (key) and 2D Array of ContainerAllocation (value),
     //                  HashMap of colours (key) and int Array of assigned cluster, total no. of containers,
     //                  no. of containers currently in cluster (value), 
     //                  2D array (cluster*stack) of integers which stores the value of the highest tiered containers
-    public static ArrayList<Location> checkGridAvailability(HashMap<Integer, ContainerAllocation[][]> grids, HashMap<String, int[]> clusterAllocations,
+    public static HashMap<Integer, ArrayList<Location>> checkGridAvailability(int clstID,HashMap<Integer, ContainerAllocation[][]> grids, HashMap<String, int[]> clusterAllocations,
             int[][] maxTierRef){
-        ArrayList<Location> availableGridList = new ArrayList<>();
-        boolean allContainerSameColour = true;
+        HashMap<Integer, ArrayList<Location>> returnMap = new HashMap<>();
+       
+            
         String currentColour = "";
         String previousColour = "";
-        for(int i=0;i<=10;i++){
-            ContainerAllocation[][] currentClusterGrid = grids.get(i);
-            for(int j=0;j<=200;j++){
-                //Add cell to available grid list if there are no containers (Initial stack positions have 0 stack position with tier length=0)
-                if(currentClusterGrid[j].length==0){
-                    Location l = new Location(i, j, 0);
-                    //System.out.println("Cluster: " +l.getCluster() + ", Stack: " + l.getStack() + ", Tier: " + l.getTier());
-                    availableGridList.add(new Location(i, j, 0));
+        System.out.println("Cluster - " + clstID);
+        // if topmost container is at tier-4, will check tier 1 to 4 has the same color for a stacking position
+        boolean allContainerSameColour = true;
+
+            ContainerAllocation[][] currentClusterGrid = grids.get(clstID);
+            for(int j=0;j<Location.getTotalStack();j++){
+                 ArrayList<Location> readyToPlaceGridList;
+                 
+                if(returnMap.containsKey(clstID)){
+                    readyToPlaceGridList = returnMap.get(clstID);
+                }else{
+                    readyToPlaceGridList = new ArrayList<Location>();
+                    returnMap.put(clstID, readyToPlaceGridList);
                 }
-                //Iterate through all ContainerAllocations in specific stacking position
-                for(int k=0;k<currentClusterGrid[j].length;k++){
-                    ContainerAllocation ca = currentClusterGrid[j][k];
-                    //Check max tier for current cluster and stack (Do not consider ContainerAllocations with 5 containers by checking null values)
-                    if(ca!=null){
-                        int currentCluster = ca.getContainer().getLocation().getCluster();
-                        int currentStack = ca.getContainer().getLocation().getStack();
-                        int currentTier = ca.getContainer().getLocation().getTier();
-                        if(currentTier!=5){
-                            
-                            
-                            //if(allContainerSameColour){
-                                //allContainerSameColour = true;
-                                //Check all container colour in the current cluster and stack are the same)
-                                Container c = ca.getContainer();
-                                int currentContainerCluster = c.getLocation().getCluster();
-                                //currentColour = c.getColour();
-                                //int[] clusterList = clusterAllocations.get(currentColour);
-                                int currentClusterStackMaxTier = maxTierRef[currentCluster][currentStack];
-                                //For all cluster and stack position with only 1 container, add location (cluster, stack, tier) to list IF
-                                //container colour matches with assigned cluster
-                                if(currentClusterStackMaxTier==1){
-                                    currentColour = c.getColour();
-                                    int[] clusterList = clusterAllocations.get(currentColour);
-                                    if(clusterList[0]==currentContainerCluster){
-                                        //availableGridList.add(new Location(i, j, 1));
-                                        //System.out.println("Cluster: " + i + ", Stack: " + j + ", Tier: " + 1);
-                                    }
-                                }else{
-                                    int actualTier = k+1;
-                                    System.out.println("Cluster: " + i + ", Stack: " + j + ", Tier: " + actualTier);
-                                    for(int l=0;l<currentClusterStackMaxTier;l++){
-                                        if(l==0){
-                                            currentColour = c.getColour(); 
-                                            previousColour = currentColour;
-                                        }else{
-                                            currentColour = c.getColour();
-                                            if(!previousColour.equals(currentColour)){
-                                                allContainerSameColour = false;
-                                            }
-                                        }
-                                        System.out.println("L: " + l + ", Current Colour: " + currentColour + ", Previous Colour: " + previousColour);
-                                        /*
-                                        currentColour = c.getColour();
-                                        int actualTier = k+1;
-                                        availableGridList.add(new Location(i, j, actualTier));
-                                        System.out.println("Cluster: " + i + ", Stack: " + j + ", Tier: " + actualTier);
-                                        */
-                                    }
-                                }
+                    
+                //Add cell to available grid list if there are no containers (Initial stack positions have 0 stack position with tier length=0)
+                if(currentClusterGrid[j].length==0){ // empty stack
+                    Location l = new Location(clstID, j, 1);
+                    readyToPlaceGridList.add(new Location(clstID, j, 1));
+                    returnMap.put(clstID, readyToPlaceGridList);
+                }else{
+                    //Iterate through all ContainerAllocations in specific stacking position
+                    for(int k=0;k<currentClusterGrid[j].length;k++){
+                        ContainerAllocation ca = currentClusterGrid[j][k];
+                        //Check max tier for current cluster and stack (Do not consider ContainerAllocations with 5 containers by checking null values)
+                        if(ca!=null && ca.getContainer() != null){
+                            int currentCluster = ca.getContainer().getLocation().getCluster();
+                            int currentStack = ca.getContainer().getLocation().getStack();
+                            int currentTier = ca.getContainer().getLocation().getTier();
+                                                        
+                            int currentClusterStackMaxTier = maxTierRef[currentCluster][currentStack];
+                            //For all cluster and stack position with only 1 container, add location (cluster, stack, tier) to list IF
+                            //container colour matches with assigned cluster
+                            if(currentClusterStackMaxTier == 1){
+                                currentColour = ca.getContainer().getColour();
+                                int[] clusterList = clusterAllocations.get(currentColour);
                                 
-                                //check whether current container is in the assigned cluster
-                                /*
-                                if(clusterList[0]==currentContainerCluster){
-                                    System.out.println("Cluster:" + currentCluster + ", Stack:" + currentStack);
-                                    //System.out.println("Assigned Cluster:" + clusterList[0] + ", Current Container"
-                                    //    + " Cluster:" + currentContainerCluster);
-                                    
-                                    //check if all containers in the specific stacking position has the same colour
-                                    
-                                    if(k==0){
-                                        previousColour = currentColour;
-                                    }else{
-                                        if(!currentColour.equals(previousColour)){
+                                // check the cluster is the designation for the current container
+                                if(clusterList[0]==currentCluster){
+                                    readyToPlaceGridList.add(new Location(clstID,j,k+1));
+                                }
+                            }else{
+                                currentColour = ca.getContainer().getColour();
+                                for(int l=1;l<currentClusterStackMaxTier;l++){
+                                        Container chkContainer = currentClusterGrid[j][l].getContainer();
+                                        String chkColour = chkContainer.getColour();
+                                        if(!currentColour.equals(chkColour)) {
                                             allContainerSameColour = false;
-                                        }
+                                            break;   
+                                        }                                    
                                     }
-                                }*/
-                            //}
-                    
+                                if(allContainerSameColour){
+                                    readyToPlaceGridList.add(new Location(clstID, j , k+1));
+                                }
+                            }
+                            returnMap.put(clstID, readyToPlaceGridList);
                         }
-                    }
-                    
-                } /*if(allContainerSameColour){
-                    availableGridList.add(new Location(i, j, currentClusterGrid[j].length));
-                }*/
-                
+                    } 
+                }
             }
+        
+        Iterator it = returnMap.entrySet().iterator();
+        while(it.hasNext()){
+            Map.Entry pair = (Map.Entry) it.next();
+            ArrayList<Location> list = (ArrayList<Location>)pair.getValue();
+            System.out.print("Location - " );
+            for(Location loct: list){
+               System.out.print("[" + loct.getStack() + " , " + loct.getTier() + "],");
+            }
+            System.out.println("");
         }
-        return availableGridList;
+        return returnMap;
     }
-    
-    
 }
