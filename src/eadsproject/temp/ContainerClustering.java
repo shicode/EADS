@@ -50,8 +50,9 @@ public class ContainerClustering {
         HashMap<Integer, ContainerAllocation[][]> allocationGrid = resourceAllocation(clusterAllocations);
         // Allocate resources to cluster
         for(int i = 0; i < Location.getTotalCluster(); i++){
-            //Cluster.topTierContainers(i,allocationGrid,topTierLookupArray);
-            Cluster.checkGridAvailability(i,allocationGrid, clusterAllocations,topTierLookupArray);
+            Cluster.topTierContainers(i,allocationGrid,topTierLookupArray);
+            Cluster.containersByTier(i, allocationGrid, 2);
+            Cluster.checkGridAvailability("orange",0,allocationGrid, clusterAllocations,topTierLookupArray);
         }
     }
     public static HashMap<Integer, HashMap<String, ArrayList<Container>>> readDataset() {
