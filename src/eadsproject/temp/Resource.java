@@ -28,12 +28,20 @@ public class Resource {
         return resourceType;
     }
 
-    public boolean isIsFree() {
+    public void setActivityList(Activity activity) {
+        this.activityList.add(activity);
+    }
+
+    public boolean isFree() {
         return isFree;
     }
 
     public ArrayList<Activity> getActivityList() {
         return activityList;
+    }
+    
+    public double getAvailableStartTime(){
+        return activityList.get(activityList.size()-1).getEndTime();
     }
     
     public String getResourceID(){

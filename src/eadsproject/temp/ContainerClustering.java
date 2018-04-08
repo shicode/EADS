@@ -32,7 +32,6 @@ public class ContainerClustering {
     private static HashMap<Integer, ContainerAllocation[][]> allocationGrids = new HashMap<>();
     private static HashMap<String, int[]> clusterAllocations = new HashMap<>();
 
-
     private static final int NO_OF_TRUCKS = 100;
     private static final int NO_OF_CRANES = 20;
 
@@ -60,7 +59,7 @@ public class ContainerClustering {
 
         allocationGrids = resourceAllocation(clusterAllocations);
         loadResourceList();
-        createSchedule();
+        //createSchedule();
 
         // Allocate resources to cluster
         for (int i = 0; i < Location.getTotalCluster(); i++) {
@@ -548,76 +547,124 @@ public class ContainerClustering {
         return sortedHashMap;
     }
 
-    public static void createSchedule() {
+//    public static void createSchedule() {
+//
+//        //Iterator it1 = allocationGrids.entrySet().iterator();
+//        //while (it1.hasNext()) {
+//        //  Map.Entry pair = (Map.Entry) it1.next();
+//        //int clusterID = (int) pair.getKey();
+//        //ContainerAllocation[][] grid = (ContainerAllocation[][]) pair.getValue();
+//        for (int i = 0; i < Location.getTotalCluster(); i++) {
+//            for (int k = 4; k >= 0; k--) {
+//                ArrayList<Container> containersByTier = Cluster.containersByTier(i, allocationGrids, k + 1);
+//                for (Container c : containersByTier) {
+//                    String containerColour = c.getColour();
+//
+//                    int destinationClusterId = allocationGrids.get(i)[c.getLocation().getStack()][k].getDestinationClusterId();
+//                    Cluster destinationCluster = clusterList.get(destinationClusterId);
+//                    Cluster currentCluster = clusterList.get(i);
+//                    Location destinationLocation = new Location(destinationClusterId, -1, -1);
+//                    ArrayList<Location> possibleLocations = Cluster.checkGridAvailability(containerColour, 0, allocationGrids, clusterAllocations, topTierLookupArray);
+//                    if (possibleLocations.isEmpty()) {
+//                        destinationLocation = possibleLocations.get(0);
+//
+//                    }
+//                    double criticalRatio = (destinationCluster.getWaitingList().size() * 1.0) / destinationCluster.getCurrentNumberOfCranes();
+//                    if (criticalRatio <= 3) {
+//                        
+//                        Resource crane = currentCluster.getAvailableCrane();
+//                        Resource truck = currentCluster.getAvailableTruck();
+//                        
+//                        double craneST = crane.getAvailableStartTime();
+//                        double truckST = truck.getAvailableStartTime();
+//                        
+//                        double startTime = Math.max(craneST, truckST);
+//                       
+//                        Activity activity = new Activity("t_Pickup", startTime, startTime+ ACTIVITY_DURATION_REFLIST.get("t_Pickup") , c, destinationLocation);
+//                        truck.setActivityList(activity);
+//                        activity = new Activity("c_Carry", startTime, startTime+ ACTIVITY_DURATION_REFLIST.get("c_Carry"), c, destinationLocation);
+//                        crane.setActivityList(activity);
+//                        activity = new Activity("c_Travel", startTime, startTime+ ACTIVITY_DURATION_REFLIST.get("c_Travel"), c, destinationLocation);
+//                        truck.setActivityList(activity);
+//                        
+//                        // add the activity to the waiting list of the destinatnio cluster
+//                        destinationCluster.setWaitingList(activity);
+//                        
+//                        // check the current cluster container pending list and remove it if found the current container
+//                        ArrayList<Container> curContPendingList = currentCluster.getContainerPendingList();
+//                        if(curContPendingList.contains(c)) curContPendingList.remove(c);
+//                            
+//                        
+//                        
+//                    } else { // if 
+//                        destinationCluster.setContainerPendingList(c);
+//                    }
+//                }
+//            }
+//
+//        }
+//
+//        /*
+//            //TODO: Pick location
+//            //TODO:  handle if destinationClusters == null 
+//            if (destinationLocation != null || destinationClusters.length != 0) {
+//                //A bunch of updates
+//
+//                //Add to Activity Schedule
+//                //TODO: Activity Type, 
+//                finalSchedule.add(new Activity(String activityType
+//                , Date startTime, Date endTime, cont, destinationLocation
+//                ));
+//                
+//                //Update Cluster Allocations
+//                int[] clusterAllocation = clusterAllocations.get(containerColor);
+//                int allocatedCluster = clusterAllocation[0];
+//                int colorContNum = clusterAllocation[2] + 1;
+//
+//                //Update allocation grids 
+//                // HashMap<Integer, ContainerAllocation[][]> allocationGrid
+//                for (Container c : topTierContainers) {
+//                    int currentTopTierContainerCluster = c.getLocation().getCluster();
+//                    int currentTopTierContainerStack = c.getLocation().getStack();
+//                    int currentTopTierContainerTier = c.getLocation().getTier();
+//
+//                    for (Location l : destinationLocation) {
+//                        int currentDestLocationCluster = l.getCluster();
+//                        int currentDestLocationStack = l.getStack();
+//                        int currentDestLocationTier = l.getTier();
+//
+//                        allocationGrids ContainerAllocation ca = new ContainerAllocation(c, currentDestLocationCluster, 0, 0);
+//
+//                    }
+//                }
+//
+//                //TODO: List updating:  wait list...
+//            }
+//         */
+//        // Stopping condition 
+//    }
+    
+    public static void moveAcrossCluster(Cluster currentCluster, Cluster destinationCluster){
+        Resource crane = currentCluster.getAvailableCrane();
+        Resource truck = currentCluster.getAvailableTruck();
 
-        //Iterator it1 = allocationGrids.entrySet().iterator();
-        //while (it1.hasNext()) {
-        //  Map.Entry pair = (Map.Entry) it1.next();
-        //int clusterID = (int) pair.getKey();
-        //ContainerAllocation[][] grid = (ContainerAllocation[][]) pair.getValue();
-        for (int i = 0; i < Location.getTotalCluster(); i++) {
-            for (int k = 4; k >= 0; k--) {
-                ArrayList<Container> containersByTier = Cluster.containersByTier(i, allocationGrids, k+1);
-                for (Container c : containersByTier) {
-                    String containerColour = c.getColour();
-                    //ArrayList<Location> possibleLocations = Cluster.checkGridAvailability(containerColour,0, allocationGrids, clusterAllocations, topTierLookupArray);
-                    //if(possibleLocations.isEmpty()){
-                    //  c.
-                    //continue;
-                    //}
+        double craneST = crane.getAvailableStartTime();
+        double truckST = truck.getAvailableStartTime();
 
-                    int destinationClusterId = allocationGrids.get(i)[c.getLocation().getStack()][k].getDestinationClusterId();
-                    Cluster destinationCluster = clusterList.get(destinationClusterId);
-                    double criticalRatio = (destinationCluster.getWaitingList().size() * 1.0)/ destinationCluster.getCurrentNumberOfCranes();
-                    if(criticalRatio <= 3){
-                        //Send it over
-                        //Activity activity 
-                    } else {
-                        destinationCluster.setContainerPendingList(c);
-                    }
-                }
-            }
+        double startTime = Math.max(craneST, truckST);
 
-        }
+        Activity activity = new Activity("t_Pickup", startTime, startTime+ ACTIVITY_DURATION_REFLIST.get("t_Pickup") , c, destinationLocation);
+        truck.setActivityList(activity);
+        activity = new Activity("c_Carry", startTime, startTime+ ACTIVITY_DURATION_REFLIST.get("c_Carry"), c, destinationLocation);
+        crane.setActivityList(activity);
+        activity = new Activity("c_Travel", startTime, startTime+ ACTIVITY_DURATION_REFLIST.get("c_Travel"), c, destinationLocation);
+        truck.setActivityList(activity);
 
-        /*
-            //TODO: Pick location
-            //TODO:  handle if destinationClusters == null 
-            if (destinationLocation != null || destinationClusters.length != 0) {
-                //A bunch of updates
+        // add the activity to the waiting list of the destinatnio cluster
+        destinationCluster.setWaitingList(activity);
 
-                //Add to Activity Schedule
-                //TODO: Activity Type, 
-                finalSchedule.add(new Activity(String activityType
-                , Date startTime, Date endTime, cont, destinationLocation
-                ));
-                
-                //Update Cluster Allocations
-                int[] clusterAllocation = clusterAllocations.get(containerColor);
-                int allocatedCluster = clusterAllocation[0];
-                int colorContNum = clusterAllocation[2] + 1;
-
-                //Update allocation grids 
-                // HashMap<Integer, ContainerAllocation[][]> allocationGrid
-                for (Container c : topTierContainers) {
-                    int currentTopTierContainerCluster = c.getLocation().getCluster();
-                    int currentTopTierContainerStack = c.getLocation().getStack();
-                    int currentTopTierContainerTier = c.getLocation().getTier();
-
-                    for (Location l : destinationLocation) {
-                        int currentDestLocationCluster = l.getCluster();
-                        int currentDestLocationStack = l.getStack();
-                        int currentDestLocationTier = l.getTier();
-
-                        allocationGrids ContainerAllocation ca = new ContainerAllocation(c, currentDestLocationCluster, 0, 0);
-
-                    }
-                }
-
-                //TODO: List updating:  wait list...
-            }
-         */
-        // Stopping condition 
+        // check the current cluster container pending list and remove it if found the current container
+        ArrayList<Container> curContPendingList = currentCluster.getContainerPendingList();
+        if(curContPendingList.contains(c)) curContPendingList.remove(c);
     }
 }
-

@@ -33,15 +33,15 @@ public class Cluster {
     }
 
     public void setResourceList(Resource resource) {
-        
-        if(resource.getResourceType().equals("C")){
+
+        if (resource.getResourceType().equals("C")) {
             ArrayList<Resource> craneList = resourceMap.get("C");
             craneList.add(resource);
-            resourceMap.put("C",craneList);
-        }else{
+            resourceMap.put("C", craneList);
+        } else {
             ArrayList<Resource> truckList = resourceMap.get("T");
             truckList.add(resource);
-            resourceMap.put("T",truckList);
+            resourceMap.put("T", truckList);
         }
     }
 
@@ -64,18 +64,53 @@ public class Cluster {
     public ArrayList<Container> getContainerPendingList() {
         return containerPendingList;
     }
-    
-    public int getCurrentNumberOfTrucks(){
+
+    public int getCurrentNumberOfTrucks() {
         return resourceMap.get("T").size();
     }
-    
-    public int getCurrentNumberOfCranes(){
-       return resourceMap.get("C").size();
+
+    public int getCurrentNumberOfCranes() {
+        return resourceMap.get("C").size();
+    }
+
+    public Resource getAvailableCrane() {
+        ArrayList<Resource> craneList = resourceMap.get("C");
+        Resource latestResource = null;
+        double latestEndTime = Integer.MAX_VALUE;
+        for (Resource crane : craneList) {
+            if (crane.isFree()) {
+                return crane;
+            }
+            ArrayList<Activity> activityList = crane.getActivityList();
+            Activity lastActivity = activityList.get(activityList.size() - 1);
+            double lastEndTime = lastActivity.getEndTime();
+            if (lastEndTime < latestEndTime) {
+                latestEndTime = lastEndTime;
+                latestResource = crane;
+            }
+        }
+        return latestResource;
     }
     
-    /*public getAvailableCrane(){
-        
-    }*/
+     public Resource getAvailableTruck() {
+        ArrayList<Resource> truckList = resourceMap.get("T");
+        Resource latestResource = null;
+        double latestEndTime = Integer.MAX_VALUE;
+        for (Resource truck : truckList) {
+            if (truck.isFree()) {
+                return truck;
+            }
+            ArrayList<Activity> activityList = truck.getActivityList();
+            Activity lastActivity = activityList.get(activityList.size() - 1);
+            double lastEndTime = lastActivity.getEndTime();
+            if (lastEndTime < latestEndTime) {
+                latestEndTime = lastEndTime;
+                latestResource = truck;
+            }
+        }
+        return latestResource;
+    }
+
 
     //Input parameters: HashMap of cluster number (key) and 2D Array of ContainerAllocation (value),
     //                  2D array (cluster*stack) of integers which stores the value of the highest tiered containers
@@ -88,7 +123,7 @@ public class Cluster {
             // looping all the tier that is filled up 
             int currentMaxTier = maxTierRef[clstID][j];
             if (currentMaxTier != 0) {
-                ContainerAllocation ca = currentClusterGrid[j][currentMaxTier-1];
+                ContainerAllocation ca = currentClusterGrid[j][currentMaxTier - 1];
                 if (ca != null && ca.getContainer() != null) {
                     topTierContainers.add(ca.getContainer());
                 }
@@ -121,20 +156,20 @@ public class Cluster {
     //                  2D array (cluster*stack) of integers which stores the value of the highest tiered containers
     public static ArrayList<Location> checkGridAvailability(String colour, int clstID, HashMap<Integer, ContainerAllocation[][]> grids, HashMap<String, int[]> clusterAllocations,
             int[][] maxTierRef) {
-        if(colour!=null){
+        if (colour != null) {
             clstID = clusterAllocations.get(colour)[0];
         }
         String currentColour = "";
         String previousColour = "";
-        
+
         // if topmost container is at tier-4, will check tier 1 to 4 has the same color for a stacking position
         boolean allContainerSameColour = true;
 
         ArrayList<Location> readyToPlaceGridList = new ArrayList<>();
-        
+
         ContainerAllocation[][] currentClusterGrid = grids.get(clstID);
         for (int j = 0; j < Location.getTotalStack(); j++) {
-                
+
             //Add cell to available grid list if there are no containers (Initial stack positions have 0 stack position with tier length=0)
             if (maxTierRef[clstID][j] == 0) { // empty stack
                 Location l = new Location(clstID, j, 1);

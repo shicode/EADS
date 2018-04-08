@@ -13,12 +13,12 @@ import java.util.Date;
  */
 public class Activity {
     private String activityType;
-    private Date startTime;
-    private Date endTime;
+    private double startTime;
+    private double endTime;
     private Container container;
     private Location destination;
     
-    public Activity(String activityType, Date startTime, Date endTime, Container container, Location destination){
+    public Activity(String activityType, double startTime, double endTime, Container container, Location destination){
         this.activityType = activityType;
         this.startTime = startTime;
         this.endTime = endTime;
@@ -30,11 +30,11 @@ public class Activity {
         return activityType;
     }
     
-    public Date getStartTime(){
+    public double getStartTime(){
         return startTime;
     }
     
-    public Date getEndTime(){
+    public double getEndTime(){
         return endTime;
     }
     
