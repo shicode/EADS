@@ -15,14 +15,14 @@ public class Activity {
     private String activityType;
     private Date startTime;
     private Date endTime;
-    private int containerID;
+    private Container container;
     private Location destination;
     
-    public Activity(String activityType, Date startTime, Date endTime, int containerID, Location destination){
+    public Activity(String activityType, Date startTime, Date endTime, Container container, Location destination){
         this.activityType = activityType;
         this.startTime = startTime;
         this.endTime = endTime;
-        this.containerID = containerID;
+        this.container = container;
         this.destination = destination;
     }
     
@@ -38,8 +38,8 @@ public class Activity {
         return endTime;
     }
     
-    public int getContainerID(){
-        return containerID;
+    public Container getContainer(){
+        return container;
     }
     
     public Location getDestination(){
