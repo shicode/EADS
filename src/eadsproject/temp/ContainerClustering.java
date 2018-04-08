@@ -26,6 +26,10 @@ public class ContainerClustering {
     private static ArrayList<Location> locationList = new ArrayList<>();
     private static HashMap<Integer, HashMap<String, Double>> clstByDiffIndx = new HashMap<>();
     private static HashMap<String, Integer> maxTierRef = new HashMap<>();
+    
+    
+    private static HashMap<Resource , ArrayList<Activity>> finalSchedule = new HashMap<>();
+    
     private static int[][] topTierLookupArray ;
     private static int[] cranesActualByCluster;
     private static int[] trucksActualByCluster;
