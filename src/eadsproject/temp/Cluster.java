@@ -6,6 +6,7 @@
 package eadsproject.temp;
 
 import java.util.*;
+import sun.misc.CRC16;
 
 /**
  *
@@ -13,17 +14,68 @@ import java.util.*;
  */
 public class Cluster {
 
-    private static int clusterID;
-    private static ArrayList<Activity> waitingList = new ArrayList<>();
-    private static ArrayList<Resource> resourceList = new ArrayList<>();
-    private static ArrayList<Container> containerList = new ArrayList<>();
+    private int clusterID;
+    private ArrayList<Activity> waitingList;
+    private HashMap<String, ArrayList<Resource>> resourceMap;
+    private ArrayList<Container> containerPendingList;
 
-    public Cluster(int clusterID, ArrayList<Activity> waitingList, ArrayList<Resource> resourceList, ArrayList<Container> containerList) {
+    public Cluster(int clusterID) {
         this.clusterID = clusterID;
-        this.waitingList = waitingList;
-        this.resourceList = resourceList;
-        this.containerList = containerList;
+        this.resourceMap = new HashMap<>();
+        resourceMap.put("C", new ArrayList<>());
+        resourceMap.put("T", new ArrayList<>());
+        this.waitingList = new ArrayList<>();
+        this.containerPendingList = new ArrayList<>();
     }
+
+    public void setWaitingList(Activity waiting) {
+        waitingList.add(waiting);
+    }
+
+    public void setResourceList(Resource resource) {
+        
+        if(resource.getResourceType().equals("C")){
+            ArrayList<Resource> craneList = resourceMap.get("C");
+            craneList.add(resource);
+            resourceMap.put("C",craneList);
+        }else{
+            ArrayList<Resource> truckList = resourceMap.get("T");
+            truckList.add(resource);
+            resourceMap.put("T",truckList);
+        }
+    }
+
+    public void setContainerPendingList(Container container) {
+        containerPendingList.add(container);
+    }
+
+    public int getClusterID() {
+        return clusterID;
+    }
+
+    public ArrayList<Activity> getWaitingList() {
+        return waitingList;
+    }
+
+    public HashMap<String, ArrayList<Resource>> getResourceList() {
+        return resourceMap;
+    }
+
+    public ArrayList<Container> getContainerPendingList() {
+        return containerPendingList;
+    }
+    
+    public int getCurrentNumberOfTrucks(){
+        return resourceMap.get("T").size();
+    }
+    
+    public int getCurrentNumberOfCranes(){
+       return resourceMap.get("C").size();
+    }
+    
+    /*public getAvailableCrane(){
+        
+    }*/
 
     //Input parameters: HashMap of cluster number (key) and 2D Array of ContainerAllocation (value),
     //                  2D array (cluster*stack) of integers which stores the value of the highest tiered containers

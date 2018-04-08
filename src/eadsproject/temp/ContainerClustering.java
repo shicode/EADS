@@ -12,13 +12,12 @@ import java.io.IOException;
 import java.util.*;
 import java.util.Arrays;
 
-
 /**
  *
  * @author user
  */
 public class ContainerClustering {
-    
+
     private static HashMap<Integer, HashMap<String, ArrayList<Container>>> ctnMapByCluster = new HashMap<>();
     private static HashMap<String, ArrayList<Container>> ctnMapByColor = new HashMap<>();
     private static HashMap<String, HashMap<Integer, int[]>> ctnByClusterTier = new HashMap<>();
@@ -28,60 +27,85 @@ public class ContainerClustering {
     private static HashMap<String, Integer> maxTierRef = new HashMap<>();
     private static final HashMap<String, Double> ACTIVITY_DURATION_REFLIST = new HashMap<>();
     private static final ArrayList<Resource> RESOURCE_LIST = new ArrayList<>();
-    
-    private static HashMap<Resource , ArrayList<Activity>> finalSchedule = new HashMap<>();
-    
+
+    private static ArrayList<Cluster> clusterList = new ArrayList<>();
+    private static HashMap<Integer, ContainerAllocation[][]> allocationGrids = new HashMap<>();
+    private static HashMap<String, int[]> clusterAllocations = new HashMap<>();
+
+
     private static final int NO_OF_TRUCKS = 100;
     private static final int NO_OF_CRANES = 20;
-    
-    private static int[][] topTierLookupArray ;
+
+    private static int[][] topTierLookupArray;
     private static int[] cranesActualByCluster;
     private static int[] trucksActualByCluster;
-    
-    public static void main(String[] args){
-        
+
+    public static void main(String[] args) {
+
         // Read input data row by row
         readDataset();
         loadActivityRefList();
-        loadResourceList();        
+
         // Getting the difficulty index of each color in respective cluster
-        HashMap<Integer, HashMap<String,Double>> clstColorDiffIndx = assignDiffIndxtoClst(ctnMapByCluster);
-        
+        HashMap<Integer, HashMap<String, Double>> clstColorDiffIndx = assignDiffIndxtoClst(ctnMapByCluster);
+
         // Tranfomring the above Hashmap to get the difficulty index of each cluster in respective color
-        HashMap<String, HashMap<Integer,Double>> colorClstDiffIndx = assignDiffIndxtoColor(clstColorDiffIndx);
-        
+        HashMap<String, HashMap<Integer, Double>> colorClstDiffIndx = assignDiffIndxtoColor(clstColorDiffIndx);
+
         // Priority Sequence of designation clsuter for respective color
         HashMap<String, Integer[]> prefClstByColor = generateDestinationClstSeq(colorClstDiffIndx);
-        
+
         // Finalized cluster allocation to respective color
-        HashMap<String, int[]> clusterAllocations = allocateClst(prefClstByColor);
-        
-        HashMap<Integer, ContainerAllocation[][]> allocationGrid = resourceAllocation(clusterAllocations);
+        clusterAllocations = allocateClst(prefClstByColor);
+
+        allocationGrids = resourceAllocation(clusterAllocations);
+        loadResourceList();
+        createSchedule();
+
         // Allocate resources to cluster
-        for(int i = 0; i < Location.getTotalCluster(); i++){
-            Cluster.topTierContainers(i,allocationGrid,topTierLookupArray);
-            Cluster.containersByTier(i, allocationGrid, 2);
-            Cluster.checkGridAvailability("orange",0,allocationGrid, clusterAllocations,topTierLookupArray);
+        for (int i = 0; i < Location.getTotalCluster(); i++) {
+            Cluster.topTierContainers(i, allocationGrids, topTierLookupArray);
+            Cluster.containersByTier(i, allocationGrids, 2);
+            Cluster.checkGridAvailability("orange", 0, allocationGrids, clusterAllocations, topTierLookupArray);
         }
     }
-    public static void loadActivityRefList(){
+
+    public static void loadActivityRefList() {
         ACTIVITY_DURATION_REFLIST.put("c_Carry", 2.0);
         ACTIVITY_DURATION_REFLIST.put("c_Shift", 0.3);
         ACTIVITY_DURATION_REFLIST.put("t_Travel", 15.0);
         ACTIVITY_DURATION_REFLIST.put("t_Deliver", 2.0);
-        ACTIVITY_DURATION_REFLIST.put("t_Pickup", 2.0); 
+        ACTIVITY_DURATION_REFLIST.put("t_Pickup", 2.0);
     }
-    public static void loadResourceList(){
+
+    public static void loadResourceList() {
         String resourceID = "";
-        for(int c=1; c <= NO_OF_CRANES; c++){
+        for (int c = 1; c <= NO_OF_CRANES; c++) {
             resourceID = "C" + c;
-            RESOURCE_LIST.add(new Resource(resourceID,true));
+            RESOURCE_LIST.add(new Resource(resourceID, true));
         }
-        for(int t=1; t<= NO_OF_TRUCKS; t++){
+        for (int t = 1; t <= NO_OF_TRUCKS; t++) {
             resourceID = "T" + t;
-            RESOURCE_LIST.add(new Resource(resourceID,true));
+            RESOURCE_LIST.add(new Resource(resourceID, true));
+        }
+
+        int trackCrane = 0;
+        int trackTruck = 20;
+
+        for (Cluster clst : clusterList) {
+            int craneNeeded = cranesActualByCluster[clst.getClusterID()];
+            int truckNeeded = trucksActualByCluster[clst.getClusterID()];
+            for (int i = 0; i < craneNeeded; i++) {
+                clst.setResourceList(RESOURCE_LIST.get(trackCrane));
+                trackCrane++;
+            }
+            for (int j = 0; j < truckNeeded; j++) {
+                clst.setResourceList(RESOURCE_LIST.get(trackTruck));
+                trackTruck++;
+            }
         }
     }
+
     public static HashMap<Integer, HashMap<String, ArrayList<Container>>> readDataset() {
         // Input Data Source
         String csvFile = "src\\Data\\PSA test data.csv";
@@ -91,9 +115,9 @@ public class ContainerClustering {
         try {
             br = new BufferedReader(new FileReader(csvFile));
             String headerLine = br.readLine();
-            
+
             while ((line = br.readLine()) != null) {
-                
+
                 // use comma as separator
                 String[] container = line.split(cvsSplitBy);
                 colourCount(container[1]);
@@ -106,8 +130,7 @@ public class ContainerClustering {
 
                 Container ctn = new Container(containerID, colour, cluster, stack, tier);
                 Location location = new Location(cluster, stack, tier);
-                
-            
+
                 //Add to max tier ref HashMap for dynamic scaling
                 String key = cluster + "-" + stack;
                 if (!maxTierRef.containsKey(key)) {
@@ -118,27 +141,27 @@ public class ContainerClustering {
                         maxTierRef.put(key, tier);
                     }
                 }
-                
+
                 //Add Container Count for every tier of each cluster
-                if(ctnByClusterTier.containsKey(colour)){
-                    HashMap<Integer,int[]> cntTier = ctnByClusterTier.get(colour);
-                    if(cntTier.containsKey(cluster)){
+                if (ctnByClusterTier.containsKey(colour)) {
+                    HashMap<Integer, int[]> cntTier = ctnByClusterTier.get(colour);
+                    if (cntTier.containsKey(cluster)) {
                         int[] intArray = cntTier.get(cluster);
-                        intArray[tier-1]++;
-                        cntTier.put(cluster, intArray);       
-                    }else{
+                        intArray[tier - 1]++;
+                        cntTier.put(cluster, intArray);
+                    } else {
                         int[] intArray = new int[5];
-                        intArray[tier-1] = 1;
+                        intArray[tier - 1] = 1;
                         cntTier.put(cluster, intArray);
                     }
-                }else{
-                    HashMap<Integer,int[]> newCntTier = new HashMap();
+                } else {
+                    HashMap<Integer, int[]> newCntTier = new HashMap();
                     int[] intArray = new int[5];
-                    intArray[tier-1] = 1;
+                    intArray[tier - 1] = 1;
                     newCntTier.put(cluster, intArray);
-                    ctnByClusterTier.put(colour,newCntTier);
+                    ctnByClusterTier.put(colour, newCntTier);
                 }
-                
+
                 locationList.add(location);
 
                 if (!ctnMapByCluster.containsKey(cluster)) {
@@ -158,18 +181,18 @@ public class ContainerClustering {
                     currentCtnMapByColour.put(colour, ctnList);
                     ctnMapByCluster.put(cluster, currentCtnMapByColour);
                 }
-                
+
             }
-            
-            ArrayList<Cluster> clusterList = new ArrayList<>();
-            for (int i = 0; i< Location.getTotalCluster(); i++ ){
-                clusterList.add(new Cluster(i,new ArrayList<Activity>(), new ArrayList<Resource>(), new ArrayList<Container>()));
-            }   
-            
+
+            clusterList = new ArrayList<>();
+            for (int i = 0; i < Location.getTotalCluster(); i++) {
+                clusterList.add(new Cluster(i));
+            }
+
             topTierLookupArray = new int[Location.getTotalCluster()][Location.getTotalStack()];
             cranesActualByCluster = new int[Location.getTotalCluster()];
             trucksActualByCluster = new int[Location.getTotalCluster()];
-            
+
         } catch (FileNotFoundException e) {
             e.printStackTrace();
         } catch (IOException e) {
@@ -182,14 +205,15 @@ public class ContainerClustering {
                     e.printStackTrace();
                 }
             }
-            
+
             return ctnMapByCluster;
         }
-        
+
     }
-    public static HashMap<Integer, HashMap<String,Double>> assignDiffIndxtoClst(HashMap<Integer, HashMap<String,ArrayList<Container>>> rawData) {
-        HashMap<Integer, HashMap<String,Double>> diffIndxbyCluster = new HashMap<>();
-        Iterator it1 = rawData.entrySet().iterator(); 
+
+    public static HashMap<Integer, HashMap<String, Double>> assignDiffIndxtoClst(HashMap<Integer, HashMap<String, ArrayList<Container>>> rawData) {
+        HashMap<Integer, HashMap<String, Double>> diffIndxbyCluster = new HashMap<>();
+        Iterator it1 = rawData.entrySet().iterator();
         while (it1.hasNext()) {
             Map.Entry pair = (Map.Entry) it1.next();
             Integer cluster = (Integer) pair.getKey();
@@ -214,25 +238,26 @@ public class ContainerClustering {
         }
         return diffIndxbyCluster;
     }
-    public static HashMap<String, HashMap<Integer, Double>> assignDiffIndxtoColor(HashMap<Integer, HashMap<String,Double>> clstColorDiffIndx){
-        
+
+    public static HashMap<String, HashMap<Integer, Double>> assignDiffIndxtoColor(HashMap<Integer, HashMap<String, Double>> clstColorDiffIndx) {
+
         Set<Integer> clusters = clstColorDiffIndx.keySet();
         Integer[] clusterArray = clusters.toArray(new Integer[clusters.size()]);
         HashMap<String, HashMap<Integer, Double>> returnMap = new HashMap<>();
         int chkVariable = 0;
-        for(Integer i: clusterArray){
-            HashMap<String,Double> colorDiffIndx = clstColorDiffIndx.get(i);
+        for (Integer i : clusterArray) {
+            HashMap<String, Double> colorDiffIndx = clstColorDiffIndx.get(i);
             Set<String> colors = colorDiffIndx.keySet();
             String[] colorArray = colors.toArray(new String[colors.size()]);
-            
-            if (chkVariable == 0){
-                for(String str: colorArray){
-                        HashMap<Integer, Double> colorHash = new HashMap<>();
-                        colorHash.put(i, colorDiffIndx.get(str));
-                        returnMap.put(str, colorHash);
+
+            if (chkVariable == 0) {
+                for (String str : colorArray) {
+                    HashMap<Integer, Double> colorHash = new HashMap<>();
+                    colorHash.put(i, colorDiffIndx.get(str));
+                    returnMap.put(str, colorHash);
                 }
-            }else{
-                for (String str: colorArray){
+            } else {
+                for (String str : colorArray) {
                     HashMap<Integer, Double> colorHash = returnMap.get(str);
                     colorHash.put(i, colorDiffIndx.get(str));
                     returnMap.put(str, colorHash);
@@ -242,80 +267,81 @@ public class ContainerClustering {
         }
         return returnMap;
     }
-    public static HashMap<String, Integer[]> generateDestinationClstSeq(HashMap<String, HashMap<Integer,Double>> colorClstDiffIndx){
+
+    public static HashMap<String, Integer[]> generateDestinationClstSeq(HashMap<String, HashMap<Integer, Double>> colorClstDiffIndx) {
         HashMap<String, Integer[]> prefClstByColor = new HashMap<>();
         Iterator it = colorClstDiffIndx.entrySet().iterator();
         while (it.hasNext()) {
-            Map.Entry color= (Map.Entry)it.next();
-            
+            Map.Entry color = (Map.Entry) it.next();
+
             // get the Cluster - DiffIndx for every color 
-            HashMap<Integer,Double> clustDiffIndx = (HashMap<Integer, Double>) color.getValue();
+            HashMap<Integer, Double> clustDiffIndx = (HashMap<Integer, Double>) color.getValue();
             // Sorting the hashmax in descending order (most difficult on the top)
-            HashMap<Integer,Double> sortedValue = sortByValues(clustDiffIndx);
-          
+            HashMap<Integer, Double> sortedValue = sortByValues(clustDiffIndx);
+
             // Transform the keySet to soreted Integer Array
             Set<Integer> prefClstList = sortedValue.keySet();
             Integer[] prefClstArray = prefClstList.toArray(new Integer[prefClstList.size()]);
-            
+
             // generating preferred sequence
-            prefClstByColor.put((String)color.getKey(),prefClstArray);
+            prefClstByColor.put((String) color.getKey(), prefClstArray);
         }
         return prefClstByColor;
     }
-    public static HashMap<String, int[]> allocateClst(HashMap<String, Integer[]> prefClstSeq){
-        
+
+    public static HashMap<String, int[]> allocateClst(HashMap<String, Integer[]> prefClstSeq) {
+
         HashMap<String, int[]> clusterAllocations = new HashMap<>();
         Iterator it = prefClstSeq.entrySet().iterator();
-        
+
         // List of color for tie-breaking (having largest diff Indx for same cluster)
         List<String> tieList = new ArrayList<>();
-        List<Integer> assignedClst = new ArrayList<>(); 
-        
+        List<Integer> assignedClst = new ArrayList<>();
+
         int untieClst = 0;
-        
-        while (it.hasNext()){
-            Map.Entry pair = (Map.Entry)it.next();
+
+        while (it.hasNext()) {
+            Map.Entry pair = (Map.Entry) it.next();
             String color = (String) pair.getKey();
-            
+
             //System.out.println(pair.getKey() + " - " + Arrays.toString((Integer[])pair.getValue()));
-            
             Integer[] prefClsts = (Integer[]) pair.getValue();
             int topClst = prefClsts[0];
             Set<String> colors = prefClstSeq.keySet();
             String[] colorsArr = colors.toArray(new String[colors.size()]);
             boolean tie = false;
-            for(int i= 0; i < colorsArr.length; i++){
-                if(!color.equals(colorsArr[i])){
+            for (int i = 0; i < colorsArr.length; i++) {
+                if (!color.equals(colorsArr[i])) {
                     int chkTie = prefClstSeq.get(colorsArr[i])[0];
                     topClst = prefClsts[0];
-                    if (chkTie == topClst){
+                    if (chkTie == topClst) {
                         tieList.add(color);
                         tie = true;
-                        for (int j = 1; j < Location.getTotalCluster(); j++){
+                        for (int j = 1; j < Location.getTotalCluster(); j++) {
                             topClst = prefClsts[j];
                             chkTie = prefClstSeq.get(colorsArr[i])[j];
-                            if (chkTie != topClst){
+                            if (chkTie != topClst) {
                                 untieClst = j;
                                 break;
-                            } 
+                            }
                         }
-                        
+
                     }
                 }
             }
             if (!tie) {
-                clusterAllocations.put(color, new int[]{topClst,Container.getContainerCnt(color),0});
+                clusterAllocations.put(color, new int[]{topClst, Container.getContainerCnt(color), 0});
                 assignedClst.add(topClst);
             }
         }
         //System.out.println(tieList.toString());
-        
-        for(int i =0; i < tieList.size(); i++){
-            for(int k = untieClst; k < Location.getTotalCluster(); k++){
+
+        for (int i = 0; i < tieList.size(); i++) {
+            for (int k = untieClst; k < Location.getTotalCluster(); k++) {
                 int cluster = prefClstSeq.get(tieList.get(i))[k];
-                if(!assignedClst.contains(cluster))  {
+                if (!assignedClst.contains(cluster)) {
                     String color = tieList.get(i);
-                    clusterAllocations.put(color, new int[]{cluster,Container.getContainerCnt(color),0});
+                    clusterAllocations.put(color, new int[]{cluster, Container.getContainerCnt(color), 0});
                     assignedClst.add(cluster);
                     break;
                 }
@@ -328,6 +354,7 @@ public class ContainerClustering {
 //        }
         return clusterAllocations;
     }
+
     public static void colourCount(String colour) {
         if (colour.equals("blue")) {
             Container.incrementBlueCount();
@@ -353,6 +380,7 @@ public class ContainerClustering {
             Container.incrementYellowCount();
         }
     }
+
     public static HashMap<Integer, ContainerAllocation[][]> resourceAllocation(HashMap<String, int[]> clusterAllocations) {
         /*
         //Iterate through the String array and we get the colours for each cluster and the number of containers.
@@ -380,7 +408,6 @@ public class ContainerClustering {
          */
         //Initialize the cluster assignments array
 
-        
         //System.out.println(clusterAllocations);
         int numClusters = ctnMapByCluster.size();
         HashMap<Integer, ContainerAllocation[][]> allocationGrids = new HashMap<>();
@@ -409,7 +436,7 @@ public class ContainerClustering {
                 for (Container c : currentContainerList) {
                     if (allocatedContainers < numberContainers) {
                         ContainerAllocation ca = new ContainerAllocation(c, destinationCluster, 1, 2);
-                        currentGrid[c.getLocation().getStack()][c.getLocation().getTier()-1] = ca;
+                        currentGrid[c.getLocation().getStack()][c.getLocation().getTier() - 1] = ca;
                         allocatedContainers++;
                         int[] clusterList = clusterAllocations.get(currentColour);
                         clusterList[2] = allocatedContainers;
@@ -421,12 +448,11 @@ public class ContainerClustering {
             allocationGrids.put(currentClusterNumber, currentGrid);
 
         }
-        
+
         //Find the top tier number of each stacking position in each cluster and store them in an ixj array
         int[] cranesNeededByCluster = new int[11];
         int[] trucksNeededByCluster = new int[11];
-        
-        
+
         it = allocationGrids.entrySet().iterator();
         while (it.hasNext()) {
             Map.Entry pair = (Map.Entry) it.next();
@@ -434,68 +460,66 @@ public class ContainerClustering {
             int currentClusterNumber = (int) pair.getKey();
             int totalTrucksNeeded = 0;
             int totalCranesNeeded = 0;
-            
-            
-            for(int j=0; j<201; j++){
+
+            for (int j = 0; j < 201; j++) {
                 int highestTier = 0;
-                int k=1;
-                while(k<=5 && currentGrid[j][k-1]!=null){
+                int k = 1;
+                while (k <= 5 && currentGrid[j][k - 1] != null) {
                     highestTier = k;
                     k++;
                 }
                 topTierLookupArray[currentClusterNumber][j] = highestTier;
-                if(highestTier>0){
-                    totalTrucksNeeded+= currentGrid[j][highestTier-1].getNumberOfTrucks();
-                    totalCranesNeeded+= currentGrid[j][highestTier-1].getNumberOfCranes();
+                if (highestTier > 0) {
+                    totalTrucksNeeded += currentGrid[j][highestTier - 1].getNumberOfTrucks();
+                    totalCranesNeeded += currentGrid[j][highestTier - 1].getNumberOfCranes();
                 }
-                
-                
+
             }
             cranesNeededByCluster[currentClusterNumber] = totalCranesNeeded;
             trucksNeededByCluster[currentClusterNumber] = totalTrucksNeeded;
         }
-        
+
         //Calculate and allocate trucks and cranes to each cluster
         int totalCranesNeeded = Arrays.stream(cranesNeededByCluster).sum();
         int totalTrucksNeeded = Arrays.stream(trucksNeededByCluster).sum();
         int trucksAvailable = NO_OF_TRUCKS;
         int cranesAvailable = NO_OF_CRANES;
-        
+
         //Calculate trucks needed
-        for(int i=0; i<trucksNeededByCluster.length; i++){
+        for (int i = 0; i < trucksNeededByCluster.length; i++) {
             int z = trucksNeededByCluster[i];
-            float ratio = (float) ((z*1.0)/totalTrucksNeeded);
-            float numNeeded = ratio*trucksAvailable;
-            int numNeededByCluster = (int)numNeeded;
+            float ratio = (float) ((z * 1.0) / totalTrucksNeeded);
+            float numNeeded = ratio * trucksAvailable;
+            int numNeededByCluster = (int) numNeeded;
             trucksActualByCluster[i] = numNeededByCluster;
         }
-        
+
         int actualTrucksNeeded = Arrays.stream(trucksActualByCluster).sum();
-        if(actualTrucksNeeded < trucksAvailable){
+        if (actualTrucksNeeded < trucksAvailable) {
             int difference = trucksAvailable - actualTrucksNeeded;
             Random r = new Random();
-            while(difference>0){
+            while (difference > 0) {
                 int randomCluster = r.nextInt(11);
                 trucksActualByCluster[randomCluster]++;
                 difference--;
             }
         }
-        
+
         //Calculate cranes needed
-        for(int i=0; i<cranesNeededByCluster.length; i++){
+        for (int i = 0; i < cranesNeededByCluster.length; i++) {
             int z = cranesNeededByCluster[i];
-            float ratio = (float) ((z*1.0)/totalCranesNeeded);
-            float numNeeded = ratio*cranesAvailable;
-            int numNeededByCluster = (int)numNeeded;
+            float ratio = (float) ((z * 1.0) / totalCranesNeeded);
+            float numNeeded = ratio * cranesAvailable;
+            int numNeededByCluster = (int) numNeeded;
             cranesActualByCluster[i] = numNeededByCluster;
         }
         actualTrucksNeeded = Arrays.stream(trucksActualByCluster).sum();
-        
+
         int actualCranesNeeded = Arrays.stream(cranesActualByCluster).sum();
-        if(actualCranesNeeded < cranesAvailable){
+        if (actualCranesNeeded < cranesAvailable) {
             int difference = cranesAvailable - actualCranesNeeded;
             Random r = new Random();
-            while(difference>0){
+            while (difference > 0) {
                 int randomCluster = r.nextInt(11);
                 cranesActualByCluster[randomCluster]++;
                 difference--;
@@ -504,88 +528,96 @@ public class ContainerClustering {
         actualCranesNeeded = Arrays.stream(cranesActualByCluster).sum();
         return allocationGrids;
     }
-    private static HashMap sortByValues(HashMap map) { 
-       List list = new LinkedList(map.entrySet());
-       // Defined Custom Comparator here
-       Collections.sort(list, new Comparator() {
+
+    private static HashMap sortByValues(HashMap map) {
+        List list = new LinkedList(map.entrySet());
+        // Defined Custom Comparator here
+        Collections.sort(list, new Comparator() {
             public int compare(Object o1, Object o2) {
-               return ((Comparable) ((Map.Entry) (o2)).getValue())
-                  .compareTo(((Map.Entry) (o1)).getValue());
+                return ((Comparable) ((Map.Entry) (o2)).getValue())
+                        .compareTo(((Map.Entry) (o1)).getValue());
             }
-       });
-       // Here I am copying the sorted list in HashMap
-       // using LinkedHashMap to preserve the insertion order
-       HashMap sortedHashMap = new LinkedHashMap();
-       for (Iterator it = list.iterator(); it.hasNext();) {
-              Map.Entry entry = (Map.Entry) it.next();
-              sortedHashMap.put(entry.getKey(), entry.getValue());
-       } 
-       return sortedHashMap;
-  }
-    
-    public static void createSchedule(HashMap<String, int[]> clusterAllocations){
-        
-        
-        for(Cluster clst: clusterList){
-            //ArrayList<Container> topTierContainers = clst.topTierContainers(int clstID, HashMap<Integer, ContainerAllocation[][]> grids, int[][] maxTierRef);
-            // Do something and get the containers in each cluster at the top tier
-            //TODO: change after shraddha's stuff is done
-            
-            String containerColor = cont.getColour();
-            
-            //Shraddha has more gifts:
-            // use a method that takes in a container color. The method does some magic and gets you a list of possible destinations
-            //TODO: Fake name : getDestination();
-            
-            Location[] destinationLocation = getDestination(containerColor);
-            
+        });
+        // Here I am copying the sorted list in HashMap
+        // using LinkedHashMap to preserve the insertion order
+        HashMap sortedHashMap = new LinkedHashMap();
+        for (Iterator it = list.iterator(); it.hasNext();) {
+            Map.Entry entry = (Map.Entry) it.next();
+            sortedHashMap.put(entry.getKey(), entry.getValue());
+        }
+        return sortedHashMap;
+    }
+
+    public static void createSchedule() {
+
+        //Iterator it1 = allocationGrids.entrySet().iterator();
+        //while (it1.hasNext()) {
+        //  Map.Entry pair = (Map.Entry) it1.next();
+        //int clusterID = (int) pair.getKey();
+        //ContainerAllocation[][] grid = (ContainerAllocation[][]) pair.getValue();
+        for (int i = 0; i < Location.getTotalCluster(); i++) {
+            for (int k = 4; k >= 0; k--) {
+                ArrayList<Container> containersByTier = Cluster.containersByTier(i, allocationGrids, k+1);
+                for (Container c : containersByTier) {
+                    String containerColour = c.getColour();
+                    //ArrayList<Location> possibleLocations = Cluster.checkGridAvailability(containerColour,0, allocationGrids, clusterAllocations, topTierLookupArray);
+                    //if(possibleLocations.isEmpty()){
+                    //  c.
+                    //continue;
+                    //}
+
+                    int destinationClusterId = allocationGrids.get(i)[c.getLocation().getStack()][k].getDestinationClusterId();
+                    Cluster destinationCluster = clusterList.get(destinationClusterId);
+                    double criticalRatio = (destinationCluster.getWaitingList().size() * 1.0)/ destinationCluster.getCurrentNumberOfCranes();
+                    if(criticalRatio <= 3){
+                        //Send it over
+                        //Activity activity 
+                    } else {
+                        destinationCluster.setContainerPendingList(c);
+                    }
+                }
+            }
+
+        }
+
+        /*
             //TODO: Pick location
-            
             //TODO:  handle if destinationClusters == null 
-            
-            if (destinationLocation != null || destinationClusters.length != 0){
+            if (destinationLocation != null || destinationClusters.length != 0) {
                 //A bunch of updates
-                
+
                 //Add to Activity Schedule
                 //TODO: Activity Type, 
-                finalSchedule.add(new Activity(String activityType, Date startTime, Date endTime, cont, destinationLocation));
+                finalSchedule.add(new Activity(String activityType
+                , Date startTime, Date endTime, cont, destinationLocation
+                ));
                 
                 //Update Cluster Allocations
                 int[] clusterAllocation = clusterAllocations.get(containerColor);
                 int allocatedCluster = clusterAllocation[0];
                 int colorContNum = clusterAllocation[2] + 1;
-                        
+
                 //Update allocation grids 
                 // HashMap<Integer, ContainerAllocation[][]> allocationGrid
-               
-                
-                for(Container c : topTierContainers){
+                for (Container c : topTierContainers) {
                     int currentTopTierContainerCluster = c.getLocation().getCluster();
                     int currentTopTierContainerStack = c.getLocation().getStack();
                     int currentTopTierContainerTier = c.getLocation().getTier();
-                    
-                    for(Location l : destinationLocation){
+
+                    for (Location l : destinationLocation) {
                         int currentDestLocationCluster = l.getCluster();
                         int currentDestLocationStack = l.getStack();
                         int currentDestLocationTier = l.getTier();
-                        
-                        allocationGrids
-                        
-                        ContainerAllocation ca = new ContainerAllocation(c, currentDestLocationCluster, 0, 0);
-                        
+
+                        allocationGrids ContainerAllocation ca = new ContainerAllocation(c, currentDestLocationCluster, 0, 0);
+
                     }
                 }
-                
-                
+
                 //TODO: List updating:  wait list...
-                
-                      
-               
             }
-            
-           // Stopping condition 
-                 //
-        }
+         */
+        // Stopping condition 
     }
 }
- 
+

@@ -5,17 +5,35 @@
  */
 package eadsproject.temp;
 
+import java.util.ArrayList;
+
 /**
  *
  * @author user
  */
 public class Resource {
     private String resourceID;
+    private String resourceType;
     private boolean isFree;
+    private ArrayList<Activity> activityList;
     
     public Resource(String resourceID, boolean isFree){
         this.resourceID = resourceID;
         this.isFree = isFree;
+        this.activityList = new ArrayList<>();
+        this.resourceType = resourceID.substring(0,1);
+    }
+
+    public String getResourceType() {
+        return resourceType;
+    }
+
+    public boolean isIsFree() {
+        return isFree;
+    }
+
+    public ArrayList<Activity> getActivityList() {
+        return activityList;
     }
     
     public String getResourceID(){
