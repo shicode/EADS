@@ -10,23 +10,23 @@ package eadsproject.temp;
  * @author user
  */
 public class Resource {
-    private int resourceID;
-    private boolean availabilityStatus;
+    private String resourceID;
+    private boolean isFree;
     
-    public Resource(int resourceID, boolean availabilityStatus){
+    public Resource(String resourceID, boolean isFree){
         this.resourceID = resourceID;
-        this.availabilityStatus = availabilityStatus;
+        this.isFree = isFree;
     }
     
-    public int getResourceID(){
+    public String getResourceID(){
         return resourceID;
     }
     
     public boolean getAvailabilityStatus(){
-        return availabilityStatus;
+        return isFree;
     }
     
-    public void setAvailabilityStatus(boolean availabilityStatus){
-        this.availabilityStatus = availabilityStatus;
+    public void setAvailabilityStatus(boolean isFree){
+        this.isFree = isFree;
     }
 }

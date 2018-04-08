@@ -134,16 +134,16 @@ public class Cluster {
         }
         //}
         //}
-//        Iterator it = returnMap.entrySet().iterator();
-//        while (it.hasNext()) {
-//            Map.Entry pair = (Map.Entry) it.next();
-//            ArrayList<Location> list = (ArrayList<Location>) pair.getValue();
-//            System.out.print("Location - ");
-//            for (Location loct : list) {
-//                System.out.print("[" + loct.getStack() + " , " + loct.getTier() + "],");
-//            }
-//            System.out.println("");
-//        }
+        Iterator it = returnMap.entrySet().iterator();
+        while (it.hasNext()) {
+            Map.Entry pair = (Map.Entry) it.next();
+            ArrayList<Location> list = (ArrayList<Location>) pair.getValue();
+            System.out.print("Location - ");
+            for (Location loct : list) {
+                System.out.print("[" + loct.getStack() + " , " + loct.getTier() + "],");
+            }
+            System.out.println("");
+        }
         return returnMap;
     }
 }

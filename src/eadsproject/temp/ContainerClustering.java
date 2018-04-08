@@ -27,7 +27,12 @@ public class ContainerClustering {
     private static HashMap<Integer, HashMap<String, Double>> clstByDiffIndx = new HashMap<>();
     private static HashMap<String, Integer> maxTierRef = new HashMap<>();
     private static final HashMap<String, Double> ACTIVITY_DURATION_REFLIST = new HashMap<>();
+    private static final ArrayList<Resource> RESOURCE_LIST = new ArrayList<>();
+    
     private static HashMap<Resource , ArrayList<Activity>> finalSchedule = new HashMap<>();
+    
+    private static final int NO_OF_TRUCKS = 100;
+    private static final int NO_OF_CRANES = 20;
     
     private static int[][] topTierLookupArray ;
     private static int[] cranesActualByCluster;
@@ -38,7 +43,7 @@ public class ContainerClustering {
         // Read input data row by row
         readDataset();
         loadActivityRefList();
-        
+        loadResourceList();        
         // Getting the difficulty index of each color in respective cluster
         HashMap<Integer, HashMap<String,Double>> clstColorDiffIndx = assignDiffIndxtoClst(ctnMapByCluster);
         
@@ -64,6 +69,17 @@ public class ContainerClustering {
         ACTIVITY_DURATION_REFLIST.put("t_Travel", 15.0);
         ACTIVITY_DURATION_REFLIST.put("t_Deliver", 2.0);
         ACTIVITY_DURATION_REFLIST.put("t_Pickup", 2.0); 
+    }
+    public static void loadResourceList(){
+        String resourceID = "";
+        for(int c=1; c <= NO_OF_CRANES; c++){
+            resourceID = "C" + c;
+            RESOURCE_LIST.add(new Resource(resourceID,true));
+        }
+        for(int t=1; t<= NO_OF_TRUCKS; t++){
+            resourceID = "T" + t;
+            RESOURCE_LIST.add(new Resource(resourceID,true));
+        }
     }
     public static HashMap<Integer, HashMap<String, ArrayList<Container>>> readDataset() {
         // Input Data Source
@@ -441,8 +457,8 @@ public class ContainerClustering {
         //Calculate and allocate trucks and cranes to each cluster
         int totalCranesNeeded = Arrays.stream(cranesNeededByCluster).sum();
         int totalTrucksNeeded = Arrays.stream(trucksNeededByCluster).sum();
-        int trucksAvailable = 100;
-        int cranesAvailable = 20;
+        int trucksAvailable = NO_OF_TRUCKS;
+        int cranesAvailable = NO_OF_CRANES;
         
         //Calculate trucks needed
         for(int i=0; i<trucksNeededByCluster.length; i++){
