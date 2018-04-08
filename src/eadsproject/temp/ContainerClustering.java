@@ -522,5 +522,70 @@ public class ContainerClustering {
        } 
        return sortedHashMap;
   }
+    
+    public static void createSchedule(HashMap<String, int[]> clusterAllocations){
+        
+        
+        for(Cluster clst: clusterList){
+            //ArrayList<Container> topTierContainers = clst.topTierContainers(int clstID, HashMap<Integer, ContainerAllocation[][]> grids, int[][] maxTierRef);
+            // Do something and get the containers in each cluster at the top tier
+            //TODO: change after shraddha's stuff is done
+            
+            String containerColor = cont.getColour();
+            
+            //Shraddha has more gifts:
+            // use a method that takes in a container color. The method does some magic and gets you a list of possible destinations
+            //TODO: Fake name : getDestination();
+            
+            Location[] destinationLocation = getDestination(containerColor);
+            
+            //TODO: Pick location
+            
+            //TODO:  handle if destinationClusters == null 
+            
+            if (destinationLocation != null || destinationClusters.length != 0){
+                //A bunch of updates
+                
+                //Add to Activity Schedule
+                //TODO: Activity Type, 
+                finalSchedule.add(new Activity(String activityType, Date startTime, Date endTime, cont, destinationLocation));
+                
+                //Update Cluster Allocations
+                int[] clusterAllocation = clusterAllocations.get(containerColor);
+                int allocatedCluster = clusterAllocation[0];
+                int colorContNum = clusterAllocation[2] + 1;
+                        
+                //Update allocation grids 
+                // HashMap<Integer, ContainerAllocation[][]> allocationGrid
+               
+                
+                for(Container c : topTierContainers){
+                    int currentTopTierContainerCluster = c.getLocation().getCluster();
+                    int currentTopTierContainerStack = c.getLocation().getStack();
+                    int currentTopTierContainerTier = c.getLocation().getTier();
+                    
+                    for(Location l : destinationLocation){
+                        int currentDestLocationCluster = l.getCluster();
+                        int currentDestLocationStack = l.getStack();
+                        int currentDestLocationTier = l.getTier();
+                        
+                        allocationGrids
+                        
+                        ContainerAllocation ca = new ContainerAllocation(c, currentDestLocationCluster, 0, 0);
+                        
+                    }
+                }
+                
+                
+                //TODO: List updating:  wait list...
+                
+                      
+               
+            }
+            
+           // Stopping condition 
+                 //
+        }
+    }
 }
  
