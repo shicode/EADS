@@ -64,11 +64,12 @@ public class Cluster {
 //            Map.Entry pair = (Map.Entry) it.next();
 //            ArrayList<Container> list = (ArrayList<Container>)pair.getValue();
 //            int Tier = (Integer)pair.getKey() + 1;
-//           
-//            System.out.println("Tier - " + Tier + " - " + list.size());
+//          
 //        }
         return returnMap;
     }
+    
+    
 
     //Input parameters: HashMap of cluster number (key) and 2D Array of ContainerAllocation (value),
     //                  HashMap of colours (key) and int Array of assigned cluster, total no. of containers,
@@ -80,7 +81,7 @@ public class Cluster {
 
         String currentColour = "";
         String previousColour = "";
-        System.out.println("Cluster - " + clstID);
+        
         // if topmost container is at tier-4, will check tier 1 to 4 has the same color for a stacking position
         boolean allContainerSameColour = true;
 
@@ -133,17 +134,16 @@ public class Cluster {
         }
         //}
         //}
-
-        Iterator it = returnMap.entrySet().iterator();
-        while (it.hasNext()) {
-            Map.Entry pair = (Map.Entry) it.next();
-            ArrayList<Location> list = (ArrayList<Location>) pair.getValue();
-            System.out.print("Location - ");
-            for (Location loct : list) {
-                System.out.print("[" + loct.getStack() + " , " + loct.getTier() + "],");
-            }
-            System.out.println("");
-        }
+//        Iterator it = returnMap.entrySet().iterator();
+//        while (it.hasNext()) {
+//            Map.Entry pair = (Map.Entry) it.next();
+//            ArrayList<Location> list = (ArrayList<Location>) pair.getValue();
+//            System.out.print("Location - ");
+//            for (Location loct : list) {
+//                System.out.print("[" + loct.getStack() + " , " + loct.getTier() + "],");
+//            }
+//            System.out.println("");
+//        }
         return returnMap;
     }
 }

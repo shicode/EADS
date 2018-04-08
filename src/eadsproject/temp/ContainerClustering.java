@@ -26,8 +26,7 @@ public class ContainerClustering {
     private static ArrayList<Location> locationList = new ArrayList<>();
     private static HashMap<Integer, HashMap<String, Double>> clstByDiffIndx = new HashMap<>();
     private static HashMap<String, Integer> maxTierRef = new HashMap<>();
-    
-    
+    private static final HashMap<String, Double> ACTIVITY_DURATION_REFLIST = new HashMap<>();
     private static HashMap<Resource , ArrayList<Activity>> finalSchedule = new HashMap<>();
     
     private static int[][] topTierLookupArray ;
@@ -38,6 +37,7 @@ public class ContainerClustering {
         
         // Read input data row by row
         readDataset();
+        loadActivityRefList();
         
         // Getting the difficulty index of each color in respective cluster
         HashMap<Integer, HashMap<String,Double>> clstColorDiffIndx = assignDiffIndxtoClst(ctnMapByCluster);
@@ -57,6 +57,13 @@ public class ContainerClustering {
             //Cluster.topTierContainers(i,allocationGrid,topTierLookupArray);
             Cluster.checkGridAvailability(i,allocationGrid, clusterAllocations,topTierLookupArray);
         }
+    }
+    public static void loadActivityRefList(){
+        ACTIVITY_DURATION_REFLIST.put("c_Carry", 2.0);
+        ACTIVITY_DURATION_REFLIST.put("c_Shift", 0.3);
+        ACTIVITY_DURATION_REFLIST.put("t_Travel", 15.0);
+        ACTIVITY_DURATION_REFLIST.put("t_Deliver", 2.0);
+        ACTIVITY_DURATION_REFLIST.put("t_Pickup", 2.0); 
     }
     public static HashMap<Integer, HashMap<String, ArrayList<Container>>> readDataset() {
         // Input Data Source
